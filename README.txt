@@ -9,17 +9,25 @@ Official documents from official LLVM site:
 - https://llvm.org/docs/AdvancedBuilds.html#multi-stage-pgo
 - https://github.com/llvm/llvm-project/blob/main/clang/cmake/caches/PGO.cmake
 
-Stage 1 - "Compiler" phase 
-- Build a stable clang
-Stage 2 - "Instrument & profile" phase
-- Build clang with stable clang
-- Run built clang with instrumentation functionality
-Stage 3 - PGO phase
-- Build clang with stable clang, with profile data attached
-
-Notes:
-- gather generated profile with
-
 ```
-/path/to/stage1/llvm-profdata merge -output=/path/to/output/profdata.prof /path/to/stage1/profiles/*.profraw
+# Build an instrumenting clang
+rm -rf stage_instrument*; mkdir stage_instrument ;cd stage_instrument
+cmake -G Ninja -C /scratch/eopc/PGO_cmake/stage_instrument.cmake /scratch/eopc/upstream-llvm-project/llvm
+ninja all -j30
+ninja install -j30
+cd ..
+
+# Build a profiling clang
+rm -rf stage_profiling*; mkdir stage_profiling ;cd stage_profiling
+cmake -G Ninja -C /scratch/eopc/PGO_cmake/stage_profiling.cmake /scratch/eopc/upstream-llvm-project/llvm
+ninja all -j30
+ninja check-llvm 
+ninja check-clang
+/scratch/eopc/PGO/stage_1/bin/llvm-profdata merge -output=/scratch/eopc/PGO/profdata.prof /scratch/eopc/PGO/stage_pgo/profiles/*.profraw
+cd ..
+
+# Build a profile-guilded-optimized clang
+rm -rf stage_pgo*; mkdir stage_pgo ;cd stage_pgo
+cmake -G Ninja -C /scratch/eopc/PGO_cmake/stage_pgo.cmake /scratch/eopc/upstream-llvm-project/llvm
+ninja all -j30
 ```
